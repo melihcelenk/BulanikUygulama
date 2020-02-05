@@ -1,0 +1,100 @@
+/*
+Melih Çelenk
+info@melihcelenk.com
+ */
+
+FUNCTION_BLOCK model
+
+    VAR_INPUT
+        pelvic_incidence : REAL;
+        pelvic_tilt : REAL;
+        lumbar_lordosis_angle : REAL;
+        sacral_slope : REAL;
+        pelvic_radius : REAL;
+        degree_spondylolisthesis : REAL;
+    END_VAR
+
+    VAR_OUTPUT
+        ctd_result : REAL;
+    END_VAR
+
+    // Bulanıklaştırma
+
+    FUZZIFY pelvic_incidence
+        // TERM small := gauss 44.27 16.7;
+        TERM small := trape -20 -20 44.27 91;
+        TERM medium := gauss 64.79 14.15;
+        TERM big := gauss 82.71 20.04;
+    END_FUZZIFY
+
+
+    FUZZIFY pelvic_tilt
+        TERM small := trape -25 -25 13.4 32.4;
+        TERM medium := gauss 21.62 14.98; 
+        TERM big := trape -5 23.61 70 70;
+        // TERM big := gauss 23.61 11.05;
+    END_FUZZIFY
+
+
+    FUZZIFY lumbar_lordosis_angle
+        // TERM small := gauss 37.62 21.15; 
+        TERM small := trape -50 -50 37.62 90;
+        TERM medium := gauss 62.2 18.8;
+        TERM big := gauss 77.4 21.35;
+    END_FUZZIFY
+
+
+    FUZZIFY sacral_slope
+        // TERM small := gauss 29.22 20.08;
+        TERM small := trape -40 -40 29.22 80;
+        TERM medium := gauss 37.86 14.91;
+        // TERM big := gauss 55.4 20.8;
+        TERM big := trape 8 55.4 140 140;
+    END_FUZZIFY
+
+
+    FUZZIFY pelvic_radius
+        //TERM small := gauss 115.5 20.07;
+        //TERM small := trape 50 50 115.5 168;
+        TERM small := trape 50 50 100 155;
+        // TERM big := gauss 124 16.6;
+        TERM big := trape 75 124 175 175;
+    END_FUZZIFY
+
+
+    FUZZIFY degree_spondylolisthesis
+        TERM small := gauss -3.548 73.19;
+        TERM medium := gauss 34.8 75.11;
+        TERM big := gauss 62.27 76.23;
+    END_FUZZIFY
+
+
+    DEFUZZIFY ctd_result
+            TERM normal := (0,1)(1,0); // 0
+            TERM abnormal := (0,0)(1,1); // 1
+
+            METHOD : COG; // COG, MOM, COM, LM, RM  - center of maximum , min of maximum
+            DEFAULT := 1;
+    END_DEFUZZIFY
+
+    // MAMDANI (kuralların yazıldığı blok)
+    RULEBLOCK kuralblok
+        AND : MIN;
+        ACT : MIN; // aktivasyon
+        ACCU : MAX; // accumulation
+
+        //RULE 01: IF pelvic_incidence IS medium   AND pelvic_tilt IS medium   AND lumbar_lordosis_angle IS small      AND sacral_slope IS medium  AND pelvic_radius IS small      AND degree_spondylolisthesis IS small       THEN ctd_result IS abnormal;
+        //RULE 02: IF pelvic_incidence IS small    AND pelvic_tilt IS small    AND lumbar_lordosis_angle IS small      AND sacral_slope IS small   AND pelvic_radius IS small      AND degree_spondylolisthesis IS small       THEN ctd_result IS abnormal;
+        RULE 03: IF pelvic_incidence IS small    AND pelvic_tilt IS small    AND lumbar_lordosis_angle IS medium     AND sacral_slope IS big     AND pelvic_radius IS small      AND degree_spondylolisthesis IS medium      THEN ctd_result IS abnormal;
+        RULE 07: IF pelvic_incidence IS small    AND pelvic_tilt IS small    AND lumbar_lordosis_angle IS small      AND sacral_slope IS medium  AND pelvic_radius IS big        AND degree_spondylolisthesis IS small       THEN ctd_result IS normal;
+        RULE 08: IF pelvic_incidence IS medium   AND pelvic_tilt IS small    AND lumbar_lordosis_angle IS medium     AND sacral_slope IS big     AND pelvic_radius IS small      AND degree_spondylolisthesis IS medium      THEN ctd_result IS abnormal;
+        RULE 09: IF pelvic_incidence IS small    AND pelvic_tilt IS small    AND lumbar_lordosis_angle IS small      AND sacral_slope IS medium  AND pelvic_radius IS small      AND degree_spondylolisthesis IS small       THEN ctd_result IS abnormal;
+        RULE 10: IF pelvic_incidence IS small    AND pelvic_tilt IS medium   AND lumbar_lordosis_angle IS small      AND sacral_slope IS small   AND pelvic_radius IS small      AND degree_spondylolisthesis IS small       THEN ctd_result IS abnormal;
+        //RULE 11: IF pelvic_incidence IS small    AND pelvic_tilt IS medium   AND lumbar_lordosis_angle IS small      AND sacral_slope IS medium  AND pelvic_radius IS big        AND degree_spondylolisthesis IS small       THEN ctd_result IS abnormal;
+
+
+    END_RULEBLOCK
+
+
+
+END_FUNCTION_BLOCK
